@@ -3,6 +3,7 @@ pymongo
 python-jose
 passlib
 pytest
+pytest-asyncio
 python-dotenv
 python-multipart
 email-validator
