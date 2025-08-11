@@ -1,0 +1,36 @@
+# Byte-compiled / optimized / compiled files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+.Python/
+
+# Distribution / packaging
+.eggs/
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Development environments
+.vscode/ # VS Code specific settings (optional, depending on team preference)
+.idea/ # PyCharm specific settings (optional, depending on team preference)
+venv/
+env/
+
+# Virtual environment
+*.venv
+.venv/
+
+# Logs and databases
+*.log
+*.sqlite3
+*.db
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.*
