@@ -40,10 +40,10 @@ async def register_user(user: UserCreate):
     user_dict.pop("password")
     user_dict["hashed_password"] = hashed_password
     
-    if("Admin" in user.roles):
+    if(["Admin"] == user.roles):
         logger.info(f"Registering user with admin role: {user.email}")
         user_dict["balance"] = 0
-    
+
     await db.users.insert_one(user_dict)
     
     logger.info(f"User registered successfully: {user.email}")

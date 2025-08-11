@@ -1,5 +1,5 @@
 import logging
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 
 class Role(BaseModel):
@@ -15,6 +15,7 @@ class UserCreate(BaseModel):
     password: str
     email: EmailStr
     username: Optional[str] = None
+    balance: float = 500.0
     notification_channel: str = "Email"
     roles: List[str] = ["Customer"]
 
@@ -29,7 +30,12 @@ class User(BaseModel):
     roles: List[str] = ["Customer"]
 
 class InvestmentFund(BaseModel):
-    id: str
+    id: Optional[str] = Field(alias="_id")
+    name: str
+    minimumFee: float
+    category: str
+
+class InvestmentFundCreate(BaseModel):
     name: str
     minimumFee: float
     category: str

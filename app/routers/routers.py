@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.config import logging
-from app.models import User, UserCreate, InvestmentFund, Transaction, NotificationChannels
+from app.models import User, UserCreate, InvestmentFund, InvestmentFundCreate, Transaction, NotificationChannels
 from app.database import db
 from app.auth import *
 from typing import List
@@ -12,11 +12,15 @@ logger = logging.getLogger(__name__)
 
 @router.post('/funds/subscribe')
 async def subscribe_fund(fund_id: str, user: User = Depends(get_current_user)):
+
     fund = await db.investment_funds.find_one({"id": fund_id})
+
     if not fund:
         raise HTTPException(status_code=404, detail="Fund not found")
+    
     if user.balance < fund['minimumFee']:
         raise HTTPException(status_code=400, detail=f"Not enough money to subscribe to the investment fund {fund['name']}")
+    
     await db.transactions.insert_one({
         "customer_id": user.id,
         "fund_id": fund_id,
@@ -56,16 +60,15 @@ def is_admin(user: User):
     return "Admin" in user.roles
 
 @router.post('/funds/create')
-async def create_fund(name: str, minimumFee: float, category: str, user: User = Depends(get_current_user)):
+async def create_fund(fund:InvestmentFundCreate, user: User = Depends(get_current_user)):
+    
     if not is_admin(user):
         raise HTTPException(status_code=403, detail="Admin privileges required")
-    fund = {
-        "name": name,
-        "minimumFee": minimumFee,
-        "category": category
-    }
-    await db.investment_funds.insert_one(fund)
+
+    fund_dict = fund.model_dump()
+    await db.investment_funds.insert_one(fund_dict)
     return {"message": "Fund created successfully"}
+
 
 @router.delete('/funds/delete')
 async def delete_fund(fund_id: str, user: User = Depends(get_current_user)):
@@ -73,3 +76,14 @@ async def delete_fund(fund_id: str, user: User = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin privileges required")
     await db.investment_funds.delete_one({"id": fund_id})
     return {"message": "Fund deleted successfully"}
+
+@router.get('/funds/list')
+async def list_funds(user: User = Depends(get_current_user)):
+
+    if not is_admin(user):
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    funds = []
+
+    async for fund in db.investment_funds.find():
+        funds.append(fund)
+    return funds
