@@ -28,18 +28,18 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def authenticate_user(username: str, password: str):
+async def authenticate_user(username: str, password: str):
     """Authenticate a user with email and password."""
 
     logger.info(f"Authenticating user with email: {username}")
-    
-    user = db.users.find_one({"email": username})
+
+    user = await db.users.find_one({"email": username})
 
     if not user:
         logger.warning(f"Authentication failed: user not found for email {username}")
         return False
-    
-    if not verify_password(password, user["hashed_password"]):
+
+    if not verify_password(password, user.get("hashed_password")):
 
         logger.warning(f"Authentication failed: incorrect password for email {username}")
         return False
@@ -63,7 +63,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     return encoded_jwt
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme)):
     """Get the current user from the request."""    
 
     logger.info("Getting current user from token.")
@@ -87,7 +87,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         logger.warning("JWTError during token decode.")
         raise credentials_exception
     
-    user = db.users.find_one({"email": username})
+    user = await db.users.find_one({"email": username})
     
     if user is None:
         logger.warning(f"User not found for email {username}.")

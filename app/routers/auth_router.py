@@ -17,8 +17,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     
     if not user:
         logger.error(f"Login failed for user: {form_data.username}")
-        return {"error": "Incorrect username or password"}
-    
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+
     access_token = create_access_token(data={"sub": user.email})
     logger.info(f"Login successful for user: {form_data.username}")
     

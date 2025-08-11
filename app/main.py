@@ -3,6 +3,10 @@ from app.config import logging
 from app.routers.routers import router
 from app.routers.auth_router import router as auth_router
 import logging
+import warnings
+
+# Ignore all DeprecationWarnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 logger = logging.getLogger(__name__)
 
