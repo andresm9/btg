@@ -2,10 +2,15 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from fastapi import status
 from app.main import app
+from app.database import db
 
 # --- REGISTER ENDPOINT TESTS ---
 @pytest.mark.asyncio(scope="session")
 async def test_register_user_success():
+
+
+    # Drop the collection before starting the test
+    await db.users.drop()
 
     payload = {
         "email": "gaticocafe@example.com",
@@ -40,6 +45,7 @@ async def test_login_success():
         response = await ac.post("/auth/login", data={"username": "gaticocafe@example.com", "password": "gaticocafe"})
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["token_type"] == "bearer"
+
 
 @pytest.mark.asyncio(scope="session")
 async def test_login_invalid_password():
