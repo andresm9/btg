@@ -55,6 +55,11 @@ class InvestmentFund(BaseModel):
         }
     )
 
+class UserInvestmentFund(BaseModel):
+    user_id: str
+    fund_id: str
+    subscription_date: datetime
+
 class InvestmentFundCreate(BaseModel):
     name: str
     minimumFee: float

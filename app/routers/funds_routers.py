@@ -26,6 +26,21 @@ async def subscribe_fund(fund_id: str, user: User = Depends(get_current_user)):
         logger.warning(f"User {user.email} has insufficient funds to subscribe to {fund['name']}")
         raise HTTPException(status_code=400, detail=f"Not enough money to subscribe to the investment fund {fund['name']}")
 
+    existingSubscription = await db['UserInvestmentFund'].find_one({
+        "user_id": user.id,
+        "fund_id": fund_id
+    })
+
+    if existingSubscription:
+        logger.warning(f"User {user.email} is already subscribed to fund {fund['name']}")
+        raise HTTPException(status_code=400, detail="Already subscribed to this fund")
+
+    await db['UserInvestmentFund'].insert_one({
+        "user_id": user.id,
+        "fund_id": fund_id,
+        "subscription_date": datetime.datetime.now()
+    })
+
     await db['Transaction'].insert_one({
         "customer_id": user.id,
         "fund_id": fund_id,
@@ -50,7 +65,19 @@ async def cancel_fund(fund_id: str, user: User = Depends(get_current_user)):
 
     if not fund:
         raise HTTPException(status_code=404, detail="Fund not found")
-    
+
+    existingSubscription = await db['UserInvestmentFund'].find_one({
+        "user_id": user.id,
+        "fund_id": fund_id
+    })
+
+    if not existingSubscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+
+    await db['UserInvestmentFund'].delete_one({
+        "user_id": user.id,
+        "fund_id": fund_id
+    })
 
     await db['Transaction'].insert_one({
         "customer_id": user.id,

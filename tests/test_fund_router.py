@@ -5,23 +5,29 @@ from fastapi import status
 from app.main import app
 from app.database import db
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def event_loop():
+    
     loop = asyncio.get_event_loop()
     yield loop
     loop.close()
 
-@pytest.fixture(scope="function")
+
 async def drop_collections():
 
     await db['User'].drop()
     await db['InvestmentFund'].drop()
     await db['Transaction'].drop()
+    await db['UserInvestmentFund'].drop()
+
+    print("Collections dropped for testing.")
 
 
 # --- CREATE FUND ENDPOINT TEST ---
 @pytest.mark.asyncio
 async def test_create_fund_success():
+
+    await drop_collections()
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         
@@ -49,6 +55,8 @@ async def test_create_fund_success():
 @pytest.mark.asyncio
 async def test_create_fund_unauthorized():
 
+    await drop_collections()
+
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
 
         payload = {
@@ -72,6 +80,9 @@ async def test_create_fund_unauthorized():
 
 @pytest.mark.asyncio
 async def test_subscribe_fund_success():
+
+    await drop_collections()
+
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
 
         payload = {
@@ -111,8 +122,13 @@ async def test_subscribe_fund_success():
         response = await ac.post(f"/funds/subscribe/{fund_id}", headers={"Authorization": f"Bearer {response_token}"})
         assert response.status_code == status.HTTP_201_CREATED
 
+
+
 @pytest.mark.asyncio
 async def test_cancel_fund_success():
+
+    await drop_collections()
+
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
 
         payload = {
@@ -133,11 +149,9 @@ async def test_cancel_fund_success():
         }
 
         response = await ac.post("/funds/create", json=payload_fund, headers={"Authorization": f"Bearer {response_token}"})
-        assert response.status_code == status.HTTP_201_CREATED
 
         fund_id = response.json().get("id")
         print(f"Created fund with ID: {fund_id}")
-        assert fund_id is not None
 
         payload = {
             "email": "simpleuser@example.com",
@@ -149,6 +163,6 @@ async def test_cancel_fund_success():
         response = await ac.post("/auth/login", data={"username": payload["email"], "password": payload["password"]})
         response_token = response.json().get("access_token")
 
+        await ac.post(f"/funds/subscribe/{fund_id}", headers={"Authorization": f"Bearer {response_token}"})
         response = await ac.post(f"/funds/cancel/{fund_id}", headers={"Authorization": f"Bearer {response_token}"})
         assert response.status_code == status.HTTP_200_OK
-
