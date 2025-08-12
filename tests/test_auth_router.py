@@ -8,7 +8,6 @@ from app.database import db
 @pytest.mark.asyncio(scope="session")
 async def test_register_user_success():
 
-
     # Drop the collection before starting the test
     await db.users.drop()
 
@@ -19,7 +18,7 @@ async def test_register_user_success():
     }   
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.post("/auth/register", json=payload)
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_201_CREATED
         assert response.json()["message"] == "User registered successfully"
 
 
@@ -45,7 +44,7 @@ async def test_register_admin_success():
     }
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.post("/auth/register", json=payload)
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_201_CREATED
         assert response.json()["message"] == "User registered successfully"
 
 

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from app.config import logging
-from app.routers.routers import router
+from app.routers.funds_routers import router as founds_router
 from app.routers.auth_router import router as auth_router
 import logging
 import warnings
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 app.include_router(auth_router)
-app.include_router(router)
+app.include_router(founds_router)
 
 @app.get('/')
 def root(request: Request = None):

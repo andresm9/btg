@@ -1,14 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.config import logging
 from app.models import UserCreate
 from app.database import db
 from app.auth import authenticate_user, create_access_token, get_password_hash
 
-router = APIRouter()
+router = APIRouter(prefix="/auth")
 logger = logging.getLogger(__name__)
 
-@router.post('/auth/login', summary="Endpoint for User Login. Should provide email and password")
+@router.post('/login', summary="Endpoint for User Login. Should provide email and password")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     """Endpoint for User Login. Should provide email and password"""
 
@@ -24,7 +24,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.post('/auth/register')
+@router.post('/register', status_code=status.HTTP_201_CREATED)
 async def register_user(user: UserCreate):
     """Creates a new User (Customer or Admin)"""
     
@@ -32,8 +32,8 @@ async def register_user(user: UserCreate):
     
     if await db.users.find_one({"email": user.email}):
         logger.error(f"Registration failed: email already exists {user.email}")
-        raise HTTPException(status_code=400, detail="Email already exists")
-    
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists")
+
     hashed_password = get_password_hash(user.password)
     
     user_dict = user.model_dump()

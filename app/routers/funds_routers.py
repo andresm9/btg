@@ -6,11 +6,10 @@ from app.database import db
 from app.auth import *
 from typing import List
 
-router = APIRouter()
-
+router = APIRouter(prefix="/funds")
 logger = logging.getLogger(__name__)
 
-@router.post('/funds/subscribe')
+@router.post('/subscribe')
 async def subscribe_fund(fund_id: str, user: User = Depends(get_current_user)):
 
     fund = await db.investment_funds.find_one({"id": fund_id})
@@ -32,7 +31,7 @@ async def subscribe_fund(fund_id: str, user: User = Depends(get_current_user)):
     # Notification logic placeholder
     return {"message": f"Subscribed to {fund['name']}"}
 
-@router.post('/funds/cancel')
+@router.post('/cancel')
 async def cancel_fund(fund_id: str, user: User = Depends(get_current_user)):
     fund = await db.investment_funds.find_one({"id": fund_id})
     if not fund:
@@ -59,11 +58,12 @@ async def get_transactions(user: User = Depends(get_current_user)) -> List[Trans
 def is_admin(user: User):
     return "Admin" in user.roles
 
-@router.post('/funds/create', status_code=status.HTTP_201_CREATED)
+
+@router.post('/create', status_code=status.HTTP_201_CREATED)
 async def create_fund(fund:InvestmentFundCreate, user: User = Depends(get_current_user)):
     
     if not is_admin(user):
-        raise HTTPException(status_code=403, detail="Admin privileges required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required")
 
     fund_dict = fund.model_dump()
     response = await db.InvestmentFund.insert_one(fund_dict)
@@ -71,16 +71,7 @@ async def create_fund(fund:InvestmentFundCreate, user: User = Depends(get_curren
     return {"message": "Fund created successfully"}
 
 
-@router.delete('/funds/delete')
-async def delete_fund(fund_id: str, user: User = Depends(get_current_user)):
-    if not is_admin(user):
-        raise HTTPException(status_code=403, detail="Admin privileges required")
-    await db.investment_funds.delete_one({"id": fund_id})
-    return {"message": "Fund deleted successfully"}
-
-
-
-@router.get('/funds/list', response_model=List[InvestmentFund])
+@router.get('/list', response_model=List[InvestmentFund])
 async def list_funds(user: User = Depends(get_current_user)):
 
     if not is_admin(user):
