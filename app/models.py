@@ -44,9 +44,9 @@ class InvestmentFund(BaseModel):
         json_schema_extra={
             "examples": [
                 {
-                    "name": "Tech Fund",
+                    "name": "Sample Fund",
                     "minimumFee": 1000,
-                    "category": "Technology"
+                    "category": "FIC"
                 }
             ]
         }

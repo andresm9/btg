@@ -1,3 +1,4 @@
+from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.config import logging
@@ -9,25 +10,31 @@ from typing import List
 router = APIRouter(prefix="/funds")
 logger = logging.getLogger(__name__)
 
-@router.post('/subscribe')
+@router.post('/subscribe/{fund_id}', status_code=status.HTTP_201_CREATED)
 async def subscribe_fund(fund_id: str, user: User = Depends(get_current_user)):
 
-    fund = await db.investment_funds.find_one({"id": fund_id})
+    logger.info(f"User {user.email} is trying to subscribe to fund {fund_id}")
+    fund = await db.InvestmentFund.find_one({"_id": ObjectId(fund_id)})
 
     if not fund:
+        logger.warning(f"Fund {fund_id} not found")
         raise HTTPException(status_code=404, detail="Fund not found")
     
     if user.balance < fund['minimumFee']:
+        logger.warning(f"User {user.email} has insufficient funds to subscribe to {fund['name']}")
         raise HTTPException(status_code=400, detail=f"Not enough money to subscribe to the investment fund {fund['name']}")
     
-    await db.transactions.insert_one({
+    await db.Transaction.insert_one({
         "customer_id": user.id,
         "fund_id": fund_id,
         "type": "Open",
         "amount": fund['minimumFee'],
         "timestamp": "now" # Replace with actual timestamp
     })
-    await db.users.update_one({"id": user.id}, {"$inc": {"balance": -fund['minimumFee']}})
+
+    await db.Users.update_one({"id": ObjectId(user.id)}, {"$inc": {"balance": -fund['minimumFee']}})
+    logger.info(f"User {user.email} subscribed to fund {fund['name']} successfully. Paid {fund['minimumFee']}")
+
     # Notification logic placeholder
     return {"message": f"Subscribed to {fund['name']}"}
 
@@ -68,14 +75,11 @@ async def create_fund(fund:InvestmentFundCreate, user: User = Depends(get_curren
     fund_dict = fund.model_dump()
     response = await db.InvestmentFund.insert_one(fund_dict)
     print(response.inserted_id)
-    return {"message": "Fund created successfully"}
+    return {"message": "Fund created successfully", "id": str(response.inserted_id)}
 
 
 @router.get('/list', response_model=List[InvestmentFund])
 async def list_funds(user: User = Depends(get_current_user)):
-
-    if not is_admin(user):
-        raise HTTPException(status_code=403, detail="Admin privileges required")
 
     funds = await db.InvestmentFund.find().to_list()
     return funds

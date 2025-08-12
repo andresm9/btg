@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.config import logging
 from app.models import UserCreate
@@ -24,9 +24,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
     
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.post('/auth/register')
+@router.post('/auth/register', status_code=status.HTTP_201_CREATED)
 def register_user(user: UserCreate):
-    """Creates a new User (Customer or Admin)"""
     
     logger.info(f"Registering user: {user.email}")
     
