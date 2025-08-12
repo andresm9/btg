@@ -8,7 +8,7 @@ from app.auth import authenticate_user, create_access_token, get_password_hash
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-@router.post('/auth/login')
+@router.post('/auth/login', summary="Endpoint for User Login. Should provide email and password")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     """Endpoint for User Login. Should provide email and password"""
 

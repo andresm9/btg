@@ -1,13 +1,17 @@
 import logging
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
+from bson import ObjectId
+from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field
+from typing import Annotated, Any, Optional, List
+from pydantic_core import core_schema
+
+PyObjectId = Annotated[str, BeforeValidator(str)]
 
 class Role(BaseModel):
-    id: str
+    id: PyObjectId = Field(alias="_id", default=None)
     name: str
 
 class NotificationChannels(BaseModel):
-    id: str
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
     name: str
 
 class UserCreate(BaseModel):
@@ -20,7 +24,7 @@ class UserCreate(BaseModel):
     roles: List[str] = ["Customer"]
 
 class User(BaseModel):
-    id: Optional[str] = None
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
     name: str
     username: Optional[str] = None
     hashed_password: str
@@ -30,18 +34,32 @@ class User(BaseModel):
     roles: List[str] = ["Customer"]
 
 class InvestmentFund(BaseModel):
-    id: Optional[str] = Field(alias="_id")
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
     name: str
     minimumFee: float
     category: str
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "Tech Fund",
+                    "minimumFee": 1000,
+                    "category": "Technology"
+                }
+            ]
+        }
+    )
 
 class InvestmentFundCreate(BaseModel):
     name: str
     minimumFee: float
     category: str
+    
 
 class Transaction(BaseModel):
-    id: str
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
     customer_id: str
     fund_id: str
     type: str  # Open for Subscription/Close for Cancellation

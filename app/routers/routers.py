@@ -59,14 +59,15 @@ async def get_transactions(user: User = Depends(get_current_user)) -> List[Trans
 def is_admin(user: User):
     return "Admin" in user.roles
 
-@router.post('/funds/create')
+@router.post('/funds/create', status_code=status.HTTP_201_CREATED)
 async def create_fund(fund:InvestmentFundCreate, user: User = Depends(get_current_user)):
     
     if not is_admin(user):
         raise HTTPException(status_code=403, detail="Admin privileges required")
 
     fund_dict = fund.model_dump()
-    await db.investment_funds.insert_one(fund_dict)
+    response = await db.InvestmentFund.insert_one(fund_dict)
+    print(response.inserted_id)
     return {"message": "Fund created successfully"}
 
 
@@ -77,13 +78,13 @@ async def delete_fund(fund_id: str, user: User = Depends(get_current_user)):
     await db.investment_funds.delete_one({"id": fund_id})
     return {"message": "Fund deleted successfully"}
 
-@router.get('/funds/list')
+
+
+@router.get('/funds/list', response_model=List[InvestmentFund])
 async def list_funds(user: User = Depends(get_current_user)):
 
     if not is_admin(user):
         raise HTTPException(status_code=403, detail="Admin privileges required")
-    funds = []
 
-    async for fund in db.investment_funds.find():
-        funds.append(fund)
+    funds = await db.InvestmentFund.find().to_list()
     return funds
