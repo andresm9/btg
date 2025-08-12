@@ -1,8 +1,9 @@
 from bson import ObjectId
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.config import logging
-from app.models import User, InvestmentFund, InvestmentFundCreate, Transaction, NotificationChannels
+from app.models import TransactionDetails, User, InvestmentFund, InvestmentFundCreate, Transaction, NotificationChannels
 from app.database import db
 from app.auth import *
 from typing import List
@@ -24,12 +25,13 @@ async def subscribe_fund(fund_id: str, user: User = Depends(get_current_user)):
     if user.balance < fund['minimumFee']:
         logger.warning(f"User {user.email} has insufficient funds to subscribe to {fund['name']}")
         raise HTTPException(status_code=400, detail=f"Not enough money to subscribe to the investment fund {fund['name']}")
-    
-    await db.Transaction.insert_one({
+
+    await db['Transaction'].insert_one({
         "customer_id": user.id,
         "fund_id": fund_id,
         "type": "Open",
-        "amount": fund['minimumFee']
+        "amount": fund['minimumFee'],
+        "timestamp": datetime.datetime.now()
     })
 
     await db['User'].update_one({"_id": ObjectId(user.id)}, {"$inc": {"balance": -fund['minimumFee']}})
@@ -54,23 +56,91 @@ async def cancel_fund(fund_id: str, user: User = Depends(get_current_user)):
         "customer_id": user.id,
         "fund_id": fund_id,
         "type": "Close",
-        "amount": -fund['minimumFee']   
+        "amount": -fund['minimumFee'],
+        "timestamp": datetime.datetime.now()
     })
 
     await db['User'].update_one({"_id": ObjectId(user.id)}, {"$inc": {"balance": fund['minimumFee']}})
 
     return {"message": f"Cancelled subscription to {fund['name']}"}
 
-@router.get('/transactions')
-async def get_transactions(user: User = Depends(get_current_user)) -> List[Transaction]:
-    txs = []
-    async for tx in db.transactions.find({"customer_id": user.id}):
-        txs.append(tx)
-    return txs
-
 # Admin-only endpoints
 def is_admin(user: User):
     return "Admin" in user.roles
+
+@router.get('/transactions')
+async def get_transactions(user: User = Depends(get_current_user)) -> List[TransactionDetails]:
+
+    pipeline = [
+        {
+            "$match": {
+                "customer_id": user.id
+            }
+        },
+        {
+            "$lookup": {
+                "from": "User",
+                "let": {
+                    "customerIdString": "$customer_id"
+                },
+                "pipeline": [
+                    {
+                        "$match": {
+                            "$expr": {
+                                "$eq": ["$_id", {"$toObjectId": "$$customerIdString"}]
+                            }
+                        }
+                    }
+                ],
+                "as": "userDetails"
+            }
+        },
+
+        {
+            "$lookup": {
+                "from": "InvestmentFund",
+                "let": {
+                    "fundIdString": "$fund_id"
+                },
+                "pipeline": [
+                    {
+                        "$match": {
+                            "$expr": {
+                                "$eq": ["$_id", {"$toObjectId": "$$fundIdString"}]
+                            }
+                        }
+                    }
+                ],
+                "as": "fundDetails"
+            }
+        },
+
+        {
+            "$unwind": "$userDetails"
+        },
+        {
+            "$unwind": "$fundDetails"
+        },
+        {
+            "$project": {
+                "_id": 1,
+                "customerId": { "$toString": "$userDetails._id" },
+                "customerName": "$userDetails.name",
+                "amount": 1,
+                "type": 1,
+                "fundName": "$fundDetails.name",
+                "fundCategory": "$fundDetails.category",
+                "timestamp": 1
+            }
+        }
+    ]
+
+    try:
+        transactions = await db['Transaction'].aggregate(pipeline).to_list()
+        return transactions
+    except Exception as e:
+        print(f"Error fetching transactions: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @router.post('/create', status_code=status.HTTP_201_CREATED)

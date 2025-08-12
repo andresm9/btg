@@ -68,3 +68,14 @@ class Transaction(BaseModel):
     type: str  # Open for Subscription/Close for Cancellation
     amount: float
     timestamp: datetime
+
+class TransactionDetails(BaseModel):
+
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    customerId: str
+    customerName: str
+    amount: float
+    type: str
+    fundName: str
+    fundCategory: str
+    timestamp: datetime
