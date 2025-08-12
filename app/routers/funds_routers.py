@@ -2,7 +2,7 @@ from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.config import logging
-from app.models import User, UserCreate, InvestmentFund, InvestmentFundCreate, Transaction, NotificationChannels
+from app.models import User, InvestmentFund, InvestmentFundCreate, Transaction, NotificationChannels
 from app.database import db
 from app.auth import *
 from typing import List
@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 async def subscribe_fund(fund_id: str, user: User = Depends(get_current_user)):
 
     logger.info(f"User {user.email} is trying to subscribe to fund {fund_id}")
-    fund = await db.InvestmentFund.find_one({"_id": ObjectId(fund_id)})
+    fund = await db['InvestmentFund'].find_one({"_id": ObjectId(fund_id)})
+    logger.info(f"Fund found: {fund}")
 
     if not fund:
         logger.warning(f"Fund {fund_id} not found")
@@ -28,30 +29,36 @@ async def subscribe_fund(fund_id: str, user: User = Depends(get_current_user)):
         "customer_id": user.id,
         "fund_id": fund_id,
         "type": "Open",
-        "amount": fund['minimumFee'],
-        "timestamp": "now" # Replace with actual timestamp
+        "amount": fund['minimumFee']
     })
 
-    await db.Users.update_one({"id": ObjectId(user.id)}, {"$inc": {"balance": -fund['minimumFee']}})
-    logger.info(f"User {user.email} subscribed to fund {fund['name']} successfully. Paid {fund['minimumFee']}")
+    await db['User'].update_one({"_id": ObjectId(user.id)}, {"$inc": {"balance": -fund['minimumFee']}})
 
+    updateduser = await db['User'].find_one({"_id": ObjectId(user.id)})
+    logger.info(updateduser)
+    
     # Notification logic placeholder
+
     return {"message": f"Subscribed to {fund['name']}"}
 
-@router.post('/cancel')
+@router.post('/cancel/{fund_id}')
 async def cancel_fund(fund_id: str, user: User = Depends(get_current_user)):
-    fund = await db.investment_funds.find_one({"id": fund_id})
+
+    fund = await db['InvestmentFund'].find_one({"_id": ObjectId(fund_id)})
+
     if not fund:
         raise HTTPException(status_code=404, detail="Fund not found")
-    await db.transactions.insert_one({
+    
+
+    await db['Transaction'].insert_one({
         "customer_id": user.id,
         "fund_id": fund_id,
         "type": "Close",
-        "amount": fund['minimumFee'],
-        "timestamp": "now" # Replace with actual timestamp
+        "amount": -fund['minimumFee']   
     })
-    await db.users.update_one({"id": user.id}, {"$inc": {"balance": fund['minimumFee']}})
-    # Notification logic placeholder
+
+    await db['User'].update_one({"_id": ObjectId(user.id)}, {"$inc": {"balance": fund['minimumFee']}})
+
     return {"message": f"Cancelled subscription to {fund['name']}"}
 
 @router.get('/transactions')

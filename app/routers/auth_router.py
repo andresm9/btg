@@ -30,7 +30,7 @@ async def register_user(user: UserCreate):
     
     logger.info(f"Registering user: {user.email}")
     
-    if await db.users.find_one({"email": user.email}):
+    if await db['User'].find_one({"email": user.email}):
         logger.error(f"Registration failed: email already exists {user.email}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists")
 
@@ -44,7 +44,7 @@ async def register_user(user: UserCreate):
         logger.info(f"Registering user with admin role: {user.email}")
         user_dict["balance"] = 0
 
-    await db.users.insert_one(user_dict)
+    await db['User'].insert_one(user_dict)
     
     logger.info(f"User registered successfully: {user.email}")
     return {"message": "User registered successfully"}

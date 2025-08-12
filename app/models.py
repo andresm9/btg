@@ -1,5 +1,4 @@
-import logging
-from bson import ObjectId
+from datetime import datetime
 from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field
 from typing import Annotated, Any, Optional, List
 from pydantic_core import core_schema
@@ -32,6 +31,10 @@ class User(BaseModel):
     balance: float = 500.0
     notification_channel: str = "Email"
     roles: List[str] = ["Customer"]
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True
+    )
 
 class InvestmentFund(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
@@ -64,4 +67,4 @@ class Transaction(BaseModel):
     fund_id: str
     type: str  # Open for Subscription/Close for Cancellation
     amount: float
-    timestamp: str
+    timestamp: datetime

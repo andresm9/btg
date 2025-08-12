@@ -33,7 +33,7 @@ async def authenticate_user(username: str, password: str):
 
     logger.info(f"Authenticating user with email: {username}")
 
-    user = await db.users.find_one({"email": username})
+    user = await db['User'].find_one({"email": username})
 
     if not user:
         logger.warning(f"Authentication failed: user not found for email {username}")
@@ -87,7 +87,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         logger.warning("JWTError during token decode.")
         raise credentials_exception
     
-    user = await db.users.find_one({"email": username})
+    user = await db['User'].find_one({"email": username})
     
     if user is None:
         logger.warning(f"User not found for email {username}.")
