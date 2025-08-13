@@ -16,10 +16,12 @@ def event_loop():
 
 
 async def drop_collections():
+
     await db['User'].drop()
     await db['InvestmentFund'].drop()
     await db['Transaction'].drop()
     await db['UserInvestmentFund'].drop()
+
     print("Collections dropped for testing.")
 
 
@@ -63,6 +65,7 @@ async def test_create_fund_unauthorized():
     """Test create a fund from a customer profile"""
 
     await drop_collections()
+
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
 
         user_token = await register_and_login(ac, "simpleuser@example.com", "simpleuser", "Simple User")
@@ -88,8 +91,6 @@ async def test_subscribe_fund_success():
         assert response.status_code == status.HTTP_201_CREATED
 
 
-
-
 @pytest.mark.asyncio
 async def test_cancel_fund_success():
 
@@ -107,3 +108,16 @@ async def test_cancel_fund_success():
         
         response = await ac.post(f"/funds/cancel/{fund_id}", headers={"Authorization": f"Bearer {user_token}"})
         assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.asyncio
+async def test_transaction_report_isarray():
+    """Test transaction report returns an array"""
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+
+        user_token = await register_and_login(ac, "simpleuser@example.com", "simpleuser", "Simple User")
+        response = await ac.get("/funds/transactions", headers={"Authorization": f"Bearer {user_token}"})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert isinstance(response.json(), list)
