@@ -62,7 +62,7 @@ async def subscribe_fund(fund_id: str, user: User = Depends(get_current_user)):
     # Notification logic placeholder
 
     # return {"message": f"Subscribed to {fund['name']}.", "fund_id": fund_id, "current_balance": updateduser.balance}
-    return FundResponse(message=f"Subscribed to {fund['name']}.", fund_id=fund_id, current_balance=updateduser.balance)
+    return FundResponse(message=f"Subscribed to {fund['name']}.", fund_id=fund_id, current_balance=updateduser["balance"])
 
 @router.post(
         '/cancel/{fund_id}',
@@ -102,7 +102,7 @@ async def cancel_fund(fund_id: str, user: User = Depends(get_current_user)):
 
     updateduser = await db['User'].find_one({"_id": ObjectId(user.id)})
 
-    return FundResponse(message=f"Cancelled subscription to {fund['name']}.", fund_id=fund_id, current_balance=updateduser.balance)
+    return FundResponse(message=f"Cancelled subscription to {fund['name']}.", fund_id=fund_id, current_balance=updateduser["balance"])
 
 # Admin-only endpoints
 def is_admin(user: User):
