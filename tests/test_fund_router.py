@@ -89,6 +89,7 @@ async def test_subscribe_fund_success():
         user_token = await register_and_login(ac, "simpleuser@example.com", "simpleuser", "Simple User")
         response = await ac.post(f"/funds/subscribe/{fund_id}", headers={"Authorization": f"Bearer {user_token}"})
         assert response.status_code == status.HTTP_201_CREATED
+        assert response.json().get("current_balance") == 450.0
 
 
 @pytest.mark.asyncio

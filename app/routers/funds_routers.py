@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.config import logging
-from app.models import TransactionDetails, User, InvestmentFund, InvestmentFundCreate, Transaction, NotificationChannels
+from app.models import FundResponse, TransactionDetails, User, InvestmentFund, InvestmentFundCreate, Transaction, NotificationChannels
 from app.database import db
 from app.auth import *
 from typing import List
@@ -11,7 +11,12 @@ from typing import List
 router = APIRouter(prefix="/funds")
 logger = logging.getLogger(__name__)
 
-@router.post('/subscribe/{fund_id}', status_code=status.HTTP_201_CREATED)
+@router.post(
+        '/subscribe/{fund_id}', 
+        status_code=status.HTTP_201_CREATED,
+        summary="Subscribe to an investment fund providing the fund ID",
+        response_model=FundResponse
+    )
 async def subscribe_fund(fund_id: str, user: User = Depends(get_current_user)):
 
     logger.info(f"User {user.email} is trying to subscribe to fund {fund_id}")
@@ -56,9 +61,15 @@ async def subscribe_fund(fund_id: str, user: User = Depends(get_current_user)):
     
     # Notification logic placeholder
 
-    return {"message": f"Subscribed to {fund['name']}"}
+    # return {"message": f"Subscribed to {fund['name']}.", "fund_id": fund_id, "current_balance": updateduser.balance}
+    return FundResponse(message=f"Subscribed to {fund['name']}.", fund_id=fund_id, current_balance=updateduser.balance)
 
-@router.post('/cancel/{fund_id}')
+@router.post(
+        '/cancel/{fund_id}',
+        status_code=status.HTTP_200_OK,
+        summary="Cancel subscription to an investment fund providing the fund ID. It return the paid fee to the user",
+        response_model=FundResponse
+    )
 async def cancel_fund(fund_id: str, user: User = Depends(get_current_user)):
 
     fund = await db['InvestmentFund'].find_one({"_id": ObjectId(fund_id)})
@@ -89,7 +100,9 @@ async def cancel_fund(fund_id: str, user: User = Depends(get_current_user)):
 
     await db['User'].update_one({"_id": ObjectId(user.id)}, {"$inc": {"balance": fund['minimumFee']}})
 
-    return {"message": f"Cancelled subscription to {fund['name']}"}
+    updateduser = await db['User'].find_one({"_id": ObjectId(user.id)})
+
+    return FundResponse(message=f"Cancelled subscription to {fund['name']}.", fund_id=fund_id, current_balance=updateduser.balance)
 
 # Admin-only endpoints
 def is_admin(user: User):
@@ -182,7 +195,7 @@ async def create_fund(fund:InvestmentFundCreate, user: User = Depends(get_curren
     return {"message": "Fund created successfully", "id": str(response.inserted_id)}
 
 
-@router.get('/list', response_model=List[InvestmentFund])
+@router.get('/list', response_model=List[InvestmentFund], status_code=status.HTTP_200_OK, summary="List all investment funds")
 async def list_funds(user: User = Depends(get_current_user)):
 
     funds = await db.InvestmentFund.find().to_list()

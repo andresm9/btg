@@ -84,3 +84,9 @@ class TransactionDetails(BaseModel):
     fundName: str
     fundCategory: str
     timestamp: datetime
+
+class FundResponse(BaseModel):
+    
+    message: str
+    fund_id: str
+    current_balance: float
