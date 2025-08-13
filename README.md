@@ -6,7 +6,6 @@ A FastAPI-based REST API for managing investment funds, customer subscriptions, 
 - Customer management with balance and notification preferences
 - Investment fund subscription/cancellation
 - Transaction reporting
-- Email/SMS notifications
 - JWT authentication and role management
 - Exception handling and clean code practices
 - Unit testing
@@ -15,13 +14,13 @@ A FastAPI-based REST API for managing investment funds, customer subscriptions, 
 ## Setup
 1. Install dependencies: `pip install -r requirements.txt`
 2. Configure MongoDB connection in `.env`
-3. Run the app: `uvicorn app.main:app --reload`
+3. Run the app: `fastapi run app/main.py`
 
 ## Testing
 Run unit tests with:
 ```
-pytest
+pytest tests/
 ```
 
 ## Deployment
-See `serverless.yml` and CloudFormation templates for AWS deployment instructions.
+See `terraform` for AWS deployment instructions.
