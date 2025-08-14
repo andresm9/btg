@@ -1,9 +1,9 @@
-output "ec2_public_ip" {
-  description = "Public IP of the EC2 instance."
-  value       = aws_instance.fastapi.public_ip
+output "app_server_ec2_public_ip" {
+  description = "Public IP of the App EC2 instance."
+  value       = aws_instance.app_server.public_ip
 }
 
-output "docdb_endpoint" {
-  description = "DocumentDB cluster endpoint."
-  value       = aws_docdb_cluster.docdb.endpoint
+output "database_server_ec2_public_ip" {
+  description = "Public IP of the Database EC2 instance."
+  value       = aws_instance.database_server.public_ip
 }

@@ -35,6 +35,8 @@ Thumbs.db
 .env
 .env.*
 # Terraform files
+.terraform/
 *.tfstate
 *.tfstate.*
 *.tfvars
+*.tfplan
